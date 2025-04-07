@@ -37,16 +37,13 @@ const registerUser = async (req, res) => {
     role,
   });
 
+  delete newUser._doc.password;
+
   try {
     await newUser.save();
     return res.status(201).json({
       message: 'User registered successfully! Please login to continue.',
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-      },
+      user: newUser,
     });
   } catch (error) {
     res.status(500).json({
@@ -76,18 +73,13 @@ const loginUser = async (req, res) => {
     });
   }
 
-  console.log('JWT_SECRET', JWT_SECRET);
-
   const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+
+  delete user._doc.password;
 
   return res.status(200).json({
     message: 'Login successful',
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
+    user,
     token,
   });
 };
