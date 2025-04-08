@@ -1,6 +1,8 @@
 const Event = require('../models/event');
 const User = require('../models/user');
 
+const { sendRegistrationSuccessMail } = require('../utils/mailer');
+
 const createEvent = async (req, res) => {
     const { name, description, date, location } = req.body;
     const { id: userId } = req.user;
@@ -156,11 +158,17 @@ const registerForEvent = async (req, res) => {
                 message: 'User already registered for this event',
             });
         }
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found',
+            });
+        }
 
         event.participants.push(userId);
         await event.save();
 
-        // TODO: Send email to the user for registration confirmation
+        await sendRegistrationSuccessMail(user.email, event);
 
         return res.status(200).json({
             message: 'User registered for event successfully',

@@ -2,8 +2,16 @@ const { createEvent, getEvents, getEvent, updateEvent, deleteEvent, registerForE
 const Event = require('../../src/models/event');
 const User = require('../../src/models/user');
 
+jest.mock('../../src/utils/mailer', () => ({
+    sendRegistrationSuccessMail: jest.fn(),
+}));
+
+
 jest.mock('../../src/models/event');
 jest.mock('../../src/models/user');
+
+const { sendRegistrationSuccessMail } = require('../../src/utils/mailer');
+
 
 const mockResponse = () => {
     const res = {};
@@ -296,18 +304,25 @@ describe('eventsController', () => {
         const fakeReq = { params: { id: 'evt123' }, user: { id: 'user1' } };
 
         it('should register a user when not already registered', async () => {
+            const userMock = { _id: 'user1', email: 'u@example.com' };
             const eventMock = {
                 participants: [],
                 save: jest.fn().mockResolvedValue(true),
             };
+
             Event.findById.mockResolvedValue(eventMock);
+            User.findById.mockResolvedValue(userMock);
 
             const res = mockResponse();
             await registerForEvent(fakeReq, res);
 
             expect(Event.findById).toHaveBeenCalledWith('evt123');
+            expect(User.findById).toHaveBeenCalledWith('user1');
             expect(eventMock.participants).toContain('user1');
             expect(eventMock.save).toHaveBeenCalled();
+
+            expect(sendRegistrationSuccessMail).toHaveBeenCalledWith('u@example.com', eventMock);
+
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.json).toHaveBeenCalledWith({
                 message: 'User registered for event successfully',
@@ -336,6 +351,18 @@ describe('eventsController', () => {
 
             expect(res.status).toHaveBeenCalledWith(404);
             expect(res.json).toHaveBeenCalledWith({ message: 'Event not found' });
+        });
+
+        it('should 404 if user not found', async () => {
+            const eventMock = { participants: [], save: jest.fn() };
+            Event.findById.mockResolvedValue(eventMock);
+            User.findById.mockResolvedValue(null);
+
+            const res = mockResponse();
+            await registerForEvent(fakeReq, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.json).toHaveBeenCalledWith({ message: 'User not found' });
         });
 
         it('should handle errors', async () => {
