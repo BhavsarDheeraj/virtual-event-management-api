@@ -10,9 +10,6 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const registerUser = async (req, res) => {
   const { name, email, password, role } = req.body;
 
-  // TODO: Validate input
-
-  // TODO: Check if user already exists
   const userAlreadyExists = await User.exists({ email });
 
   if (userAlreadyExists) {
@@ -21,14 +18,12 @@ const registerUser = async (req, res) => {
     });
   }
 
-  // TODO: Hash password
   const hashedPassword = await bcrypt.hash(password, saltRounds);
   if (!hashedPassword) {
     return res.status(500).json({
       message: 'Something went wrong!',
     });
   }
-
 
   const newUser = new User({
     name,
@@ -37,13 +32,15 @@ const registerUser = async (req, res) => {
     role,
   });
 
-  delete newUser._doc.password;
-
   try {
     await newUser.save();
+
+    const userObj = newUser.toObject();
+    delete userObj.password;
+
     return res.status(201).json({
       message: 'User registered successfully! Please login to continue.',
-      user: newUser,
+      user: userObj,
     });
   } catch (error) {
     res.status(500).json({
@@ -56,8 +53,6 @@ const registerUser = async (req, res) => {
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
-
-  // TODO: Validate input
 
   const user = await User.findOne({ email });
   if (!user) {
@@ -75,11 +70,12 @@ const loginUser = async (req, res) => {
 
   const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
 
-  delete user._doc.password;
+  const userObj = user.toObject();
+  delete userObj.password;
 
   return res.status(200).json({
     message: 'Login successful',
-    user,
+    user: userObj,
     token,
   });
 };

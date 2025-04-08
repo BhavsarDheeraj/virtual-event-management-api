@@ -13,10 +13,12 @@ const {
 const authMiddleware = require('../middlewares/authMiddleware');
 const organizerMiddleware = require('../middlewares/organizerMiddleware');
 
-router.post('/', [authMiddleware, organizerMiddleware], createEvent);
+const { createEventValidator, updateEventValidator } = require('../utils/validators');
+
+router.post('/', [authMiddleware, organizerMiddleware, createEventValidator], createEvent);
 router.get('/', [authMiddleware], getEvents);
 router.get('/:id', [authMiddleware], getEvent);
-router.patch('/:id', [authMiddleware, organizerMiddleware], updateEvent);
+router.patch('/:id', [authMiddleware, organizerMiddleware, updateEventValidator], updateEvent);
 router.delete('/:id', [authMiddleware, organizerMiddleware], deleteEvent);
 router.post('/:id/register', [authMiddleware], registerForEvent);
 

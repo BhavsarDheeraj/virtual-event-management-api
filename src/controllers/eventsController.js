@@ -25,7 +25,7 @@ const createEvent = async (req, res) => {
         return res.status(201).json({
             message: 'Event created successfully',
             event: {
-                ...newEvent._doc,
+                ...newEvent.toObject(),
                 organizer: {
                     _id: organizer._id,
                     name: organizer.name,
